@@ -1,0 +1,17 @@
+# Claude Code personal notes
+CLAUDE.local.md
+
+# Dependencies
+node_modules/
+
+# Expo / build output
+.expo/
+dist/
+build/
+web-build/
+
+# Env & secrets
+.env*
+
+# Logs
+*.log

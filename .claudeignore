@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Env & secrets
+.env*
+secrets/
+
+# Build output / generated
+dist/
+build/
+web-build/
+.expo/
+android/
+ios/
+coverage/
+
+# Python bytecode (if tooling scripts are ever added)
+__pycache__/
+
+# Logs
+*.log
