@@ -14,6 +14,14 @@ export interface TrackedExercise {
   sessionCount: number;
 }
 
+export interface HistorySetRow {
+  sessionId: string;
+  startedAt: string;
+  weightKg: number;
+  reps: number;
+  position: number;
+}
+
 export function createStatsRepo(db: DbExecutor) {
   return {
     /**
@@ -46,6 +54,20 @@ export function createStatsRepo(db: DbExecutor) {
            AND s.finished_at IS NOT NULL
          GROUP BY s.id
          ORDER BY s.started_at ASC`,
+        [exerciseId]
+      );
+    },
+
+    /** Every completed set of one exercise across finished sessions — feeds the single-exercise export. */
+    async exerciseSetsHistory(exerciseId: string): Promise<HistorySetRow[]> {
+      return db.getAllAsync<HistorySetRow>(
+        `SELECT s.id AS sessionId, s.started_at AS startedAt,
+           st.weight_kg AS weightKg, st.reps AS reps, st.position AS position
+         FROM sets st
+         JOIN session_exercises se ON se.id = st.session_exercise_id
+         JOIN sessions s ON s.id = se.session_id
+         WHERE se.exercise_id = ? AND st.completed = 1 AND s.finished_at IS NOT NULL
+         ORDER BY s.started_at ASC, st.position ASC`,
         [exerciseId]
       );
     },
