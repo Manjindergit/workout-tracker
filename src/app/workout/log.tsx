@@ -11,6 +11,7 @@ import { useActiveWorkoutStore, type ActiveExercise } from '../../stores/activeW
 import { useSettingsStore } from '../../stores/settingsStore';
 import { colors } from '../../theme';
 import { formatLocalTime } from '../../utils/dates';
+import { stepForUnit } from '../../utils/units';
 
 export default function LogScreen() {
   useKeepAwake(); // the phone must not lock between sets
@@ -62,8 +63,12 @@ export default function LogScreen() {
           text: 'Discard workout',
           style: 'destructive',
           onPress: async () => {
-            await workout.discard();
-            router.replace('/(tabs)');
+            try {
+              await workout.discard();
+              router.replace('/(tabs)');
+            } catch {
+              Alert.alert('Could not discard', 'Something went wrong — try again.');
+            }
           },
         },
       ]);
@@ -78,8 +83,12 @@ export default function LogScreen() {
         {
           text: 'Finish',
           onPress: async () => {
-            const sessionId = await workout.finish();
-            if (sessionId) router.replace(`/session/${sessionId}`);
+            try {
+              const sessionId = await workout.finish();
+              if (sessionId) router.replace(`/session/${sessionId}`);
+            } catch {
+              Alert.alert('Could not finish', 'Something went wrong saving — try again.');
+            }
           },
         },
       ]
@@ -93,8 +102,12 @@ export default function LogScreen() {
         text: 'Discard',
         style: 'destructive',
         onPress: async () => {
-          await workout.discard();
-          router.replace('/(tabs)');
+          try {
+            await workout.discard();
+            router.replace('/(tabs)');
+          } catch {
+            Alert.alert('Could not discard', 'Something went wrong — try again.');
+          }
         },
       },
     ]);
@@ -153,7 +166,7 @@ export default function LogScreen() {
                 key={set.id}
                 set={set}
                 unit={unit}
-                weightStep={unit === 'kg' ? incrementKg : 5}
+                weightStep={stepForUnit(incrementKg, unit)}
                 isBodyweight={item.isBodyweight}
                 onValues={(weightKg, reps) =>
                   workout.setSetValues(item.sessionExerciseId, set.id, weightKg, reps)

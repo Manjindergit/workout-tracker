@@ -25,6 +25,17 @@ function trimZeros(n: number): string {
   return String(n);
 }
 
+/**
+ * Stepper increment in display units. lb steps map to plate-sensible values
+ * (2.5/5/10 lb) rather than converting kg literally into ragged decimals.
+ */
+export function stepForUnit(incrementKg: number, unit: Unit): number {
+  if (unit === 'kg') return incrementKg;
+  if (incrementKg <= 1.25) return 2.5;
+  if (incrementKg <= 2.5) return 5;
+  return 10;
+}
+
 /** Parse a weight/reps text input safely; empty or invalid → 0. Accepts comma decimals. */
 export function parseNumericInput(text: string): number {
   const normalized = text.replace(',', '.').trim();
