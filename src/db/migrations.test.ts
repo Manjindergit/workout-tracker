@@ -1,5 +1,6 @@
 import { migrateDb, SCHEMA_VERSION } from './migrations';
 import { m002Seed } from './migrations/002_seed';
+import { m003SeedMore } from './migrations/003_seed_more';
 import { createMigratedTestDb, createTestDb } from './testDb';
 
 describe('migrations', () => {
@@ -18,26 +19,44 @@ describe('migrations', () => {
     db.close();
   });
 
-  it('seeds 8 muscle groups and 39 exercises with fixed ids', async () => {
+  it('seeds 8 muscle groups and 42 exercises with fixed ids', async () => {
     const db = await createMigratedTestDb();
     const groups = await db.getAllAsync<{ id: string; is_custom: number }>(
       'SELECT id, is_custom FROM muscle_groups'
     );
     const exercises = await db.getAllAsync<{ id: string }>('SELECT id FROM exercises');
     expect(groups).toHaveLength(8);
-    expect(exercises).toHaveLength(39);
+    expect(exercises).toHaveLength(42);
     expect(groups.every((g) => g.is_custom === 0)).toBe(true);
     expect(groups.map((g) => g.id)).toContain('00000000-0000-4000-8000-000000000001');
     db.close();
   });
 
+  it('seed pack 2 lands Landmine Row and the adduction machines in the right groups', async () => {
+    const db = await createMigratedTestDb();
+    const rows = await db.getAllAsync<{ id: string; name: string; group_name: string }>(
+      `SELECT e.id, e.name, mg.name AS group_name FROM exercises e
+       JOIN muscle_groups mg ON mg.id = e.primary_muscle_group_id
+       WHERE e.id IN ('00000000-0000-4000-8000-000000000140',
+                      '00000000-0000-4000-8000-000000000141',
+                      '00000000-0000-4000-8000-000000000142')
+       ORDER BY e.id`
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({ name: 'Landmine Row', group_name: 'Back' }),
+      expect.objectContaining({ name: 'Hip Adduction', group_name: 'Legs' }),
+      expect.objectContaining({ name: 'Hip Abduction', group_name: 'Legs' }),
+    ]);
+    db.close();
+  });
+
   it('seed statements are idempotent (INSERT OR IGNORE)', async () => {
     const db = await createMigratedTestDb();
-    for (const statement of m002Seed.statements) {
+    for (const statement of [...m002Seed.statements, ...m003SeedMore.statements]) {
       await db.execAsync(statement);
     }
     const exercises = await db.getAllAsync('SELECT id FROM exercises');
-    expect(exercises).toHaveLength(39);
+    expect(exercises).toHaveLength(42);
     db.close();
   });
 
