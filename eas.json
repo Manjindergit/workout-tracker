@@ -1,0 +1,19 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "sideload": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

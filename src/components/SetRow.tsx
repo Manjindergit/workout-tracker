@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { ActiveSet } from '../stores/activeWorkout';
@@ -35,6 +35,17 @@ export function SetRow({
     return display > 0 ? String(display) : '';
   });
   const [repsText, setRepsText] = useState(() => (set.reps > 0 ? String(set.reps) : ''));
+
+  // If the display unit changes while mounted, re-render the stored kg in the new unit
+  // (only then — never clobber in-progress typing on ordinary value updates).
+  const prevUnit = useRef(unit);
+  useEffect(() => {
+    if (prevUnit.current !== unit) {
+      prevUnit.current = unit;
+      const display = kgToDisplay(set.weightKg, unit);
+      setWeightText(display > 0 ? String(display) : '');
+    }
+  }, [unit, set.weightKg]);
 
   const emit = (nextWeightText: string, nextRepsText: string) => {
     onValues(displayToKg(parseNumericInput(nextWeightText), unit), Math.round(parseNumericInput(nextRepsText)));

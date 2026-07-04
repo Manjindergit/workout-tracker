@@ -114,6 +114,20 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => {
     });
   }
 
+  /**
+   * Optimistic mirror updates self-heal: if the SQLite write fails, rehydrate the
+   * store from the db so the UI snaps back to the truth instead of diverging.
+   */
+  async function mutateOrResync(mutation: () => Promise<void>): Promise<void> {
+    try {
+      await mutation();
+    } catch (error) {
+      console.warn('[activeWorkout] mutation failed; resyncing from SQLite', error);
+      const { sessionId } = get();
+      if (sessionId) await hydrate(sessionId);
+    }
+  }
+
   return {
     sessionId: null,
     startedAt: null,
@@ -156,8 +170,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => {
       set((state) => ({
         exercises: state.exercises.filter((e) => e.sessionExerciseId !== sessionExerciseId),
       }));
-      const { sessions } = await getRepos();
-      await sessions.removeSessionExercise(sessionExerciseId);
+      await mutateOrResync(async () => {
+        const { sessions } = await getRepos();
+        await sessions.removeSessionExercise(sessionExerciseId);
+      });
     },
 
     setSetValues(sessionExerciseId, setId, weightKg, reps) {
@@ -195,9 +211,11 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => {
         ),
       }));
       // Typed-then-immediately-checked: land the values before the completion flag.
-      await flushSet(setId);
-      const { sets } = await getRepos();
-      await sets.setCompleted(setId, completed);
+      await mutateOrResync(async () => {
+        await flushSet(setId);
+        const { sets } = await getRepos();
+        await sets.setCompleted(setId, completed);
+      });
     },
 
     async addSet(sessionExerciseId) {
@@ -236,8 +254,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>((set, get) => {
             : e
         ),
       }));
-      const { sets } = await getRepos();
-      await sets.removeSet(setId);
+      await mutateOrResync(async () => {
+        const { sets } = await getRepos();
+        await sets.removeSet(setId);
+      });
     },
 
     async finish() {
