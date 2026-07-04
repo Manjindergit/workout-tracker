@@ -1,18 +1,30 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { AppButton } from '../components/AppButton';
 import { useLaunchStore } from '../stores/launchStore';
 import { colors } from '../theme';
 
 export default function RootLayout() {
   const ready = useLaunchStore((s) => s.ready);
+  const initError = useLaunchStore((s) => s.initError);
   const init = useLaunchStore((s) => s.init);
 
   useEffect(() => {
     void init();
   }, [init]);
+
+  if (initError) {
+    return (
+      <View style={styles.loading}>
+        <Text style={styles.errorTitle}>Couldn’t open the database</Text>
+        <Text style={styles.errorDetail}>{initError}</Text>
+        <AppButton label="Retry" onPress={() => void init()} />
+      </View>
+    );
+  }
 
   if (!ready) {
     return (
@@ -38,5 +50,7 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
+  errorTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+  errorDetail: { fontSize: 13, color: colors.subtle, textAlign: 'center' },
 });

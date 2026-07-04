@@ -21,27 +21,35 @@ export interface Repos {
 
 let reposPromise: Promise<Repos> | null = null;
 
+async function openRepos(): Promise<Repos> {
+  // useNewConnection: Expo Go / dev reloads can hand back a cached native
+  // connection from a dead JS context, which then NPEs on the first prepare.
+  const raw = await openDatabaseAsync(DATABASE_NAME, { useNewConnection: true });
+  await initDb(raw);
+  const db = wrapExpoDb(raw);
+  return {
+    db,
+    muscleGroups: createMuscleGroupRepo(db),
+    exercises: createExerciseRepo(db),
+    sessions: createSessionRepo(db),
+    sets: createSetRepo(db),
+    stats: createStatsRepo(db),
+    settings: createSettingsRepo(db),
+  };
+}
+
 /**
  * Single app-wide connection, opened lazily and migrated once. A module-level
  * singleton (not React context) so Zustand actions and screens share the same
- * repositories without plumbing.
+ * repositories without plumbing. A failed open clears the cache so the next
+ * call retries instead of replaying the cached rejection forever.
  */
 export function getRepos(): Promise<Repos> {
   if (!reposPromise) {
-    reposPromise = (async () => {
-      const raw = await openDatabaseAsync(DATABASE_NAME);
-      await initDb(raw);
-      const db = wrapExpoDb(raw);
-      return {
-        db,
-        muscleGroups: createMuscleGroupRepo(db),
-        exercises: createExerciseRepo(db),
-        sessions: createSessionRepo(db),
-        sets: createSetRepo(db),
-        stats: createStatsRepo(db),
-        settings: createSettingsRepo(db),
-      };
-    })();
+    reposPromise = openRepos().catch((error) => {
+      reposPromise = null;
+      throw error;
+    });
   }
   return reposPromise;
 }
