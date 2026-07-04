@@ -1,10 +1,13 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { AppButton } from '../../components/AppButton';
 import { Chip } from '../../components/Chip';
 import { EmptyState } from '../../components/EmptyState';
 import { getRepos } from '../../db/appDb';
+import { deliverText } from '../../utils/export/deliver';
+import { serializeSessionsMarkdown } from '../../utils/export/markdown';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { colors } from '../../theme';
 import type { SessionDetail } from '../../types/domain';
@@ -48,6 +51,25 @@ export default function SessionDetailScreen() {
     : null;
   const groupNames = [...new Set(detail.exercises.map((e) => e.muscleGroupName))];
 
+  // This session plus the two before it — the "what should I do next time?" paste.
+  const copyForAi = async () => {
+    const repos = await getRepos();
+    const recent = await repos.sessions.listFinished(50);
+    const index = recent.findIndex((s) => s.id === detail.id);
+    const ids = (index >= 0 ? recent.slice(index, index + 3) : [detail]).map((s) => s.id);
+    const details = (
+      await Promise.all(ids.map((sessionId) => repos.sessions.getSessionDetail(sessionId)))
+    ).filter((d): d is NonNullable<typeof d> => d !== null);
+    const route = await deliverText(
+      serializeSessionsMarkdown(details),
+      'workout-session.md',
+      'text/markdown'
+    );
+    if (route === 'clipboard') {
+      Alert.alert('Copied', 'This session (plus the two before it) is on the clipboard.');
+    }
+  };
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.date}>{formatLocalDate(detail.startedAt)}</Text>
@@ -61,6 +83,15 @@ export default function SessionDetailScreen() {
           <Chip key={name} label={name} />
         ))}
       </View>
+
+      {detail.finishedAt ? (
+        <AppButton
+          label="Copy for AI"
+          variant="secondary"
+          onPress={() => void copyForAi()}
+          style={styles.copyButton}
+        />
+      ) : null}
 
       {detail.exercises.length === 0 ? (
         <EmptyState title="No exercises in this session" />
@@ -99,6 +130,7 @@ const styles = StyleSheet.create({
   date: { fontSize: 20, fontWeight: '700', color: colors.text },
   meta: { fontSize: 13, color: colors.subtle, marginTop: 2, marginBottom: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 6 },
+  copyButton: { marginBottom: 12 },
   card: {
     backgroundColor: colors.card,
     borderRadius: 14,

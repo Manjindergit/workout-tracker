@@ -30,6 +30,7 @@ export default function RootLayout() {
         <Stack.Screen name="workout/log" options={{ title: 'Workout' }} />
         <Stack.Screen name="session/[id]" options={{ title: 'Session' }} />
         <Stack.Screen name="exercise/[id]" options={{ title: 'Progress' }} />
+        <Stack.Screen name="export" options={{ title: 'Export for AI', presentation: 'modal' }} />
       </Stack>
       <StatusBar style="auto" />
     </>
