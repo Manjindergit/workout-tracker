@@ -7,11 +7,16 @@ import { colors } from '../theme';
 interface SessionCardProps {
   summary: SessionSummary;
   onPress: () => void;
+  onLongPress?: () => void;
 }
 
-export function SessionCard({ summary, onPress }: SessionCardProps) {
+export function SessionCard({ summary, onPress, onLongPress }: SessionCardProps) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
       <View style={styles.row}>
         <Text style={styles.date}>{formatLocalDate(summary.startedAt)}</Text>
         <Text style={styles.counts}>
