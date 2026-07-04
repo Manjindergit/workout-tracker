@@ -1,6 +1,7 @@
 import type { DbExecutor } from './executor';
 import { m001Initial } from './migrations/001_initial';
 import { m002Seed } from './migrations/002_seed';
+import { m003SeedMore } from './migrations/003_seed_more';
 
 export interface Migration {
   version: number;
@@ -9,7 +10,7 @@ export interface Migration {
 }
 
 /** Append-only. Never edit a shipped entry — add a new one with the next version. */
-export const MIGRATIONS: Migration[] = [m001Initial, m002Seed];
+export const MIGRATIONS: Migration[] = [m001Initial, m002Seed, m003SeedMore];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
 
